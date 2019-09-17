@@ -44,8 +44,6 @@ gatewayClient.on('GUILD_CREATE', (msg) => {
   for (let i = 0; i < msg.d.roles.length; i++) {
     options.roles[msg.d.roles[i].name] = msg.d.roles[i].id;
   }
-
-  console.log(options);
 });
 
 gatewayClient.on('MESSAGE_CREATE', (msg) => {
@@ -53,7 +51,13 @@ gatewayClient.on('MESSAGE_CREATE', (msg) => {
     return;
   }
 
-  console.log(msg.d.content);
+  const items = parseMessage(msg.d.content);
+
+  if (items === undefined) {
+    return;
+  }
+
+  console.log(items);
 });
 
 gatewayClient.on('MESSAGE_UPDATE', (msg) => {
@@ -61,13 +65,41 @@ gatewayClient.on('MESSAGE_UPDATE', (msg) => {
     return;
   }
 
-  console.log(msg.d.content);
-});
+  const items = parseMessage(msg.d.content);
 
-gatewayClient.on('MESSAGE_DELETE', (msg) => {
-  if (options.checkPermission(msg.d.author.id, msg.d.member.roles) === false) {
+  if (items === undefined) {
     return;
   }
 
-  console.log(msg.d.content);
+  console.log(items);
 });
+
+gatewayClient.on('MESSAGE_DELETE', (msg) => {
+  console.log(msg.d.id);
+});
+
+function parseMessage (message) {
+  const lines = message.split('\n').filter((line) => line.length > 0);
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === '**Role Menu:**') {
+      return parseLines(lines.slice(i + 1));
+    }
+  }
+}
+
+function parseLines (lines) {
+  const items = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const split = lines[i].split(' : ');
+
+    if (split.length !== 2) {
+      continue;
+    }
+
+    items[split[0].trim()] = split[1].trim();
+  }
+
+  return items;
+}
