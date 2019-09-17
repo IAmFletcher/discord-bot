@@ -1,0 +1,11 @@
+{
+  "name": "discord-bot",
+  "version": "0.1.0",
+  "description": "A simple Discord bot written in Node.js that assigns roles when you react to messages.",
+  "main": "index.js",
+  "author": "Fletcher Goss <44245838+IAmFletcher@users.noreply.github.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "semistandard": "^14.2.0"
+  }
+}
