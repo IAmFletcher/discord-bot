@@ -1,7 +1,10 @@
+const EventEmitter = require('events');
 const WebSocket = require('ws');
 
-class GatewayClient {
+class GatewayClient extends EventEmitter {
   constructor (token, os, name) {
+    super();
+
     this._token = token;
     this._os = os;
     this._name = name;
@@ -41,6 +44,7 @@ class GatewayClient {
 
       switch (msg.op) {
         case 0: // Dispatch
+          this.emit(msg.t, msg);
           break;
         case 1: // Heartbeat
           break;
