@@ -5,6 +5,9 @@
   "main": "index.js",
   "author": "Fletcher Goss <44245838+IAmFletcher@users.noreply.github.com>",
   "license": "MIT",
+  "scripts": {
+    "start": "node src/index.js"
+  },
   "devDependencies": {
     "semistandard": "^14.2.0"
   }
