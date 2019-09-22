@@ -103,3 +103,7 @@ function parseLines (lines) {
 
   return items;
 }
+
+process.on('SIGINT', () => {
+  gatewayClient.disconnect();
+});

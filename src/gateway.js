@@ -65,6 +65,15 @@ class GatewayClient extends EventEmitter {
     });
   }
 
+  disconnect () {
+    if (this._websocket === undefined) {
+      return;
+    }
+
+    clearInterval(this._heartbeatInterval);
+    this._websocket.close();
+  }
+
   sendPayload (op, data, sequence, type) {
     if (sequence === undefined) {
       sequence = null;
