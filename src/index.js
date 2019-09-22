@@ -1,6 +1,32 @@
 const process = require('process');
+const mysql = require('mysql');
 const HTTPSClient = require('./httpsClient');
 const GatewayClient = require('./gateway');
+
+const database = mysql.createConnection({
+  host: 'localhost',
+  user: 'fletcher',
+  password: 'pass'
+});
+
+database.connect((err) => {
+  if (err) {
+    throw err;
+  }
+
+  console.log('Database Connected');
+
+  database.query('CREATE DATABASE IF NOT EXISTS bot', (err, result) => {
+    if (err) {
+      throw err;
+    }
+
+    console.log('Database Created');
+  });
+
+  database.query('USE bot');
+  database.query('CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT UNIQUE, message_id VARCHAR(64), is_unicode BOOLEAN, unicode INT, reaction VARCHAR(100), role VARCHAR(100), key(id));');
+});
 
 const options = {
   roles: {},
@@ -57,7 +83,7 @@ gatewayClient.on('MESSAGE_CREATE', (msg) => {
     return;
   }
 
-  console.log(items);
+  insertItemsIntoDB(msg.d.id, items);
 });
 
 gatewayClient.on('MESSAGE_UPDATE', (msg) => {
@@ -71,11 +97,33 @@ gatewayClient.on('MESSAGE_UPDATE', (msg) => {
     return;
   }
 
-  console.log(items);
+  database.query('DELETE FROM messages WHERE message_id = ?', msg.d.id);
+  insertItemsIntoDB(msg.d.id, items);
 });
 
+function insertItemsIntoDB (msgID, items) {
+  const unicode = items.filter(item => !item[0].includes('<'));
+  const reaction = items.filter(item => item[0].includes('<'));
+
+  if (unicode.length !== 0) {
+    database.query('INSERT INTO messages (message_id, is_unicode, unicode, role) VALUES (?)', unicode.map(item => [msgID, true, item[0].codePointAt(0), item[1]]));
+  }
+
+  if (reaction.length !== 0) {
+    database.query('INSERT INTO messages (message_id, is_unicode, reaction, role) VALUES (?)', reaction.map(item => [msgID, false, item[0], item[1]]));
+  }
+}
+
 gatewayClient.on('MESSAGE_DELETE', (msg) => {
-  console.log(msg.d.id);
+  database.query('SELECT COUNT(*) FROM messages where message_id = ?', msg.d.id, (err, results, fields) => {
+    if (err !== null) {
+      throw err;
+    }
+
+    if (results[0]['COUNT(*)'] > 0) {
+      database.query('DELETE FROM messages WHERE message_id = ?', msg.d.id);
+    }
+  });
 });
 
 function parseMessage (message) {
@@ -89,7 +137,7 @@ function parseMessage (message) {
 }
 
 function parseLines (lines) {
-  const items = {};
+  const items = [];
 
   for (let i = 0; i < lines.length; i++) {
     const split = lines[i].split(' : ');
@@ -98,7 +146,7 @@ function parseLines (lines) {
       continue;
     }
 
-    items[split[0].trim()] = split[1].trim();
+    items.push([split[0].trim(), split[1].trim()]);
   }
 
   return items;
@@ -106,4 +154,5 @@ function parseLines (lines) {
 
 process.on('SIGINT', () => {
   gatewayClient.disconnect();
+  database.end();
 });

@@ -12,6 +12,7 @@
     "semistandard": "^14.2.0"
   },
   "dependencies": {
+    "mysql": "^2.17.1",
     "ws": "^7.1.2"
   }
 }
