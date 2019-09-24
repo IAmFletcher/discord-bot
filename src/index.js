@@ -69,6 +69,7 @@ apiClient.request('GET', 'gateway')
   });
 
 gatewayClient.on('GUILD_CREATE', (msg) => {
+  options.guild_id = msg.d.id;
   options.permissions.owner = msg.d.owner_id;
 
   for (let i = 0; i < msg.d.roles.length; i++) {
