@@ -32,6 +32,10 @@ const options = {
   roles: {},
   permissions: {},
 
+  isRole (role) {
+    return Object.prototype.hasOwnProperty.call(this.roles, role);
+  },
+
   checkPermission (id, roles) {
     if (id === this.permissions.owner) {
       return true;
@@ -102,6 +106,12 @@ gatewayClient.on('MESSAGE_UPDATE', (msg) => {
 });
 
 function insertItemsIntoDB (msgID, items) {
+  for (let i = 0; i < items.length; i++) {
+    if (options.isRole(items[i][1]) === false) {
+      items.splice(i, 1);
+    }
+  }
+
   const unicode = items.filter(item => !item[0].includes('<'));
   const reaction = items.filter(item => item[0].includes('<'));
 
@@ -146,7 +156,7 @@ function parseLines (lines) {
       continue;
     }
 
-    items.push([split[0].trim(), split[1].trim()]);
+    items.push([split[0].trim(), split[1].replace(/[ `]/g, '')]);
   }
 
   return items;
