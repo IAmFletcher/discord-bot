@@ -10,7 +10,7 @@ class HTTPSClient {
     this.basePath = basePath;
   }
 
-  request (method, endpoint) {
+  request (method, endpoint, headers = {}) {
     if (endpoint[0] !== '/') {
       endpoint = '/' + endpoint;
     }
@@ -18,7 +18,8 @@ class HTTPSClient {
     const options = {
       hostname: this.hostname,
       path: this.basePath + endpoint,
-      method: method
+      method: method,
+      headers: headers
     };
 
     return new Promise((resolve, reject) => {
