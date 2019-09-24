@@ -35,7 +35,11 @@ class HTTPSClient {
             reject(new Error('The connection was terminated while the message was still being sent.'));
           }
 
-          resolve(new HTTPSResponse(res.statusCode, res.headers, JSON.parse(data)));
+          if (res.statusCode === 204) {
+            resolve(new HTTPSResponse(res.statusCode, res.headers));
+          } else {
+            resolve(new HTTPSResponse(res.statusCode, res.headers, JSON.parse(data)));
+          }
         });
       });
 
