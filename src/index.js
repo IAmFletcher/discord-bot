@@ -163,6 +163,54 @@ function parseLines (lines) {
   return items;
 }
 
+gatewayClient.on('MESSAGE_REACTION_ADD', (msg) => {
+  database.query('SELECT * FROM messages WHERE message_id = ?', msg.d.message_id, (err, results, fields) => {
+    if (err !== null) {
+      throw err;
+    }
+
+    if (results.length === 0) {
+      return;
+    }
+
+    for (let i = 0; i < results.length; i++) {
+      if (msg.d.emoji.name[0] === '<') {
+        if (msg.d.emoji.name === results[i].reaction) {
+          apiClient.request('PUT', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+        }
+      } else {
+        if (msg.d.emoji.name.codePointAt(0) === results[i].unicode) {
+          apiClient.request('PUT', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+        }
+      }
+    }
+  });
+});
+
+gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
+  database.query('SELECT * FROM messages WHERE message_id = ?', msg.d.message_id, (err, results, fields) => {
+    if (err !== null) {
+      throw err;
+    }
+
+    if (results.length === 0) {
+      return;
+    }
+
+    for (let i = 0; i < results.length; i++) {
+      if (msg.d.emoji.name[0] === '<') {
+        if (msg.d.emoji.name === results[i].reaction) {
+          apiClient.request('DELETE', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+        }
+      } else {
+        if (msg.d.emoji.name.codePointAt(0) === results[i].unicode) {
+          apiClient.request('DELETE', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+        }
+      }
+    }
+  });
+});
+
 process.on('SIGINT', () => {
   gatewayClient.disconnect();
   database.end();
