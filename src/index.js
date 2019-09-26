@@ -32,6 +32,49 @@ const options = {
   roles: {},
   permissions: {},
 
+  guildQueue: [],
+
+  intervals: {},
+  queues: {},
+
+  addGuildRequest (method, endpoint) {
+    if (this.intervals.guild === undefined) {
+      this.intervals.guild = setInterval(this._sendGuildRequest, 1000);
+    }
+
+    console.log('Adding request');
+    this.guildQueue.push([method, endpoint]);
+  },
+
+  _sendGuildRequest () {
+    if (this.guildQueue.length === 0) {
+      return;
+    }
+
+    console.log('Sending request');
+    const request = this.guildQueue.shift();
+    apiClient.request(request[0], request[1], { Authorization: `Bot ${process.env.DiscordBotToken}` });
+  },
+
+  addChannelRequest (channelID, method, endpoint) {
+    if (this.intervals[channelID] !== undefined) {
+      this.queues[channelID].push([method, endpoint]);
+      return;
+    }
+
+    this.intervals[channelID] = setInterval(this._sendChannelRequest, 1000, channelID);
+    this.queues[channelID] = [];
+  },
+
+  _sendChannelRequest (channelID) {
+    if (this.queues[channelID].length === 0) {
+      return;
+    }
+
+    const request = this.queues[channelID].shift();
+    apiClient.request(request[0], request[1], { Authorization: `Bot ${process.env.DiscordBotToken}` });
+  },
+
   isRole (role) {
     return Object.prototype.hasOwnProperty.call(this.roles, role);
   },
@@ -56,6 +99,9 @@ const options = {
     return false;
   }
 };
+
+options._sendGuildRequest = options._sendGuildRequest.bind(options);
+options._sendChannelRequest = options._sendChannelRequest.bind(options);
 
 const apiClient = new HTTPSClient('discordapp.com', 'api/v6');
 const gatewayClient = new GatewayClient(process.env.DiscordBotToken, 'linux', 'discord-bot');
@@ -176,11 +222,11 @@ gatewayClient.on('MESSAGE_REACTION_ADD', (msg) => {
     for (let i = 0; i < results.length; i++) {
       if (msg.d.emoji.name[0] === '<') {
         if (msg.d.emoji.name === results[i].reaction) {
-          apiClient.request('PUT', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+          options.addGuildRequest('PUT', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`);
         }
       } else {
         if (msg.d.emoji.name.codePointAt(0) === results[i].unicode) {
-          apiClient.request('PUT', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+          options.addGuildRequest('PUT', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`);
         }
       }
     }
@@ -200,11 +246,11 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
     for (let i = 0; i < results.length; i++) {
       if (msg.d.emoji.name[0] === '<') {
         if (msg.d.emoji.name === results[i].reaction) {
-          apiClient.request('DELETE', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+          options.addGuildRequest('DELETE', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`);
         }
       } else {
         if (msg.d.emoji.name.codePointAt(0) === results[i].unicode) {
-          apiClient.request('DELETE', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`, { Authorization: `Bot ${process.env.DiscordBotToken}` });
+          options.addGuildRequest('DELETE', `guilds/${options.guild_id}/members/${msg.d.user_id}/roles/${options.roles[results[i].role]}`);
         }
       }
     }
@@ -214,4 +260,8 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
 process.on('SIGINT', () => {
   gatewayClient.disconnect();
   database.end();
+
+  for (const channelid in options.intervals) {
+    clearInterval(options.intervals[channelid]);
+  }
 });
