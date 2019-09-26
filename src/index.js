@@ -62,8 +62,10 @@ const options = {
       return;
     }
 
+    console.log('Adding channel request');
     this.intervals[channelID] = setInterval(this._sendChannelRequest, 1000, channelID);
     this.queues[channelID] = [];
+    this.queues[channelID].push([method, endpoint]);
   },
 
   _sendChannelRequest (channelID) {
@@ -71,6 +73,7 @@ const options = {
       return;
     }
 
+    console.log('Sending channel request');
     const request = this.queues[channelID].shift();
     apiClient.request(request[0], request[1], { Authorization: `Bot ${process.env.DiscordBotToken}` });
   },
@@ -134,6 +137,7 @@ gatewayClient.on('MESSAGE_CREATE', (msg) => {
     return;
   }
 
+  addReactions(msg.d.channel_id, msg.d.id, items);
   insertItemsIntoDB(msg.d.id, items);
 });
 
@@ -149,8 +153,24 @@ gatewayClient.on('MESSAGE_UPDATE', (msg) => {
   }
 
   database.query('DELETE FROM messages WHERE message_id = ?', msg.d.id);
+  addReactions(msg.d.channel_id, msg.d.id, items);
   insertItemsIntoDB(msg.d.id, items);
 });
+
+function addReactions (channelID, msgID, items) {
+  for (let i = 0; i < items.length; i++) {
+    console.log(items[i]);
+
+    let emoji = '';
+    if (items[i][0][0] === '<') {
+      emoji = items[i][0].replace(/(?:<:)(.*)(?:>)/, '$1');
+    } else {
+      emoji = items[i][0];
+    }
+
+    options.addChannelRequest(channelID, 'PUT', `channels/${channelID}/messages/${msgID}/reactions/${emoji}/@me`);
+  }
+}
 
 function insertItemsIntoDB (msgID, items) {
   for (let i = 0; i < items.length; i++) {

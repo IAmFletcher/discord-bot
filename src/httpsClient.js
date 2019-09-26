@@ -17,7 +17,7 @@ class HTTPSClient {
 
     const options = {
       hostname: this.hostname,
-      path: this.basePath + endpoint,
+      path: encodeURI(this.basePath + endpoint),
       method: method,
       headers: headers
     };
