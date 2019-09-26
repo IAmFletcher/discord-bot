@@ -43,7 +43,6 @@ const options = {
       this.intervals.guild = setInterval(this._sendGuildRequest, 1000);
     }
 
-    console.log('Adding request');
     this.guildQueue.push([method, endpoint]);
   },
 
@@ -52,7 +51,6 @@ const options = {
       return;
     }
 
-    console.log('Sending request');
     const request = this.guildQueue.shift();
     apiClient.request(request[0], request[1], { Authorization: `Bot ${process.env.DiscordBotToken}` });
   },
@@ -63,7 +61,6 @@ const options = {
       return;
     }
 
-    console.log('Adding channel request');
     this.intervals[channelID] = setInterval(this._sendChannelRequest, 1000, channelID);
     this.queues[channelID] = [];
     this.queues[channelID].push([method, endpoint]);
@@ -74,7 +71,6 @@ const options = {
       return;
     }
 
-    console.log('Sending channel request');
     const request = this.queues[channelID].shift();
     apiClient.request(request[0], request[1], { Authorization: `Bot ${process.env.DiscordBotToken}` });
   },
@@ -160,8 +156,6 @@ gatewayClient.on('MESSAGE_UPDATE', (msg) => {
 
 function addReactions (channelID, msgID, items) {
   for (let i = 0; i < items.length; i++) {
-    console.log(items[i]);
-
     let emoji = '';
     if (items[i][0][0] === '<') {
       emoji = items[i][0].replace(/(?:<:)(.*)(?:>)/, '$1');
