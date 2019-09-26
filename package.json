@@ -7,13 +7,20 @@
   "author": "Fletcher Goss <44245838+IAmFletcher@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "jest"
   },
   "devDependencies": {
+    "jest": "^24.9.0",
     "semistandard": "^14.2.0"
   },
   "dependencies": {
     "mysql": "^2.17.1",
     "ws": "^7.1.2"
+  },
+  "semistandard": {
+    "ignore": [
+      "*.test.js"
+    ]
   }
 }
