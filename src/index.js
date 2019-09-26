@@ -29,6 +29,7 @@ database.connect((err) => {
 });
 
 const options = {
+  id: '622342248872542209',
   roles: {},
   permissions: {},
 
@@ -230,6 +231,10 @@ function parseLines (lines) {
 }
 
 gatewayClient.on('MESSAGE_REACTION_ADD', (msg) => {
+  if (msg.d.user_id === options.id) {
+    return;
+  }
+
   database.query('SELECT * FROM messages WHERE message_id = ?', msg.d.message_id, (err, results, fields) => {
     if (err !== null) {
       throw err;
@@ -254,6 +259,10 @@ gatewayClient.on('MESSAGE_REACTION_ADD', (msg) => {
 });
 
 gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
+  if (msg.d.user_id === options.id) {
+    return;
+  }
+
   database.query('SELECT * FROM messages WHERE message_id = ?', msg.d.message_id, (err, results, fields) => {
     if (err !== null) {
       throw err;
