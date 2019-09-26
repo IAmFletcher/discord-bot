@@ -5,8 +5,8 @@ const GatewayClient = require('./gateway');
 
 const database = mysql.createConnection({
   host: 'localhost',
-  user: 'fletcher',
-  password: 'pass'
+  user: 'discordbot',
+  password: process.env.SQLPassword
 });
 
 database.connect((err) => {
