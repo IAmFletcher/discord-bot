@@ -1,9 +1,0 @@
-#!/bin/shssh
-
-fletcher@NODE.SERVER.IP <<EOF
- cd ~/discord-bot
- git pull
- yarn install — production
- supervisorctl restart discordbot
- exit
-EOF
