@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 const WebSocket = require('ws');
 
-class GatewayClient extends EventEmitter {
+class WebSocketClient extends EventEmitter {
   constructor (token, os, name) {
     super();
 
@@ -21,8 +21,8 @@ class GatewayClient extends EventEmitter {
       console.log('Gateway Opened');
     });
 
-    this._websocket.on('close', () => {
-      console.log('Gateway Closed');
+    this._websocket.on('close', (code, reason) => {
+      console.log(`Gateway Closed: ${code} ${reason}`);
     });
 
     this._websocket.on('error', (err) => {
@@ -121,4 +121,4 @@ class GatewayClient extends EventEmitter {
   }
 }
 
-module.exports = GatewayClient;
+module.exports = WebSocketClient;

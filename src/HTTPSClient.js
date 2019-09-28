@@ -8,9 +8,12 @@ class HTTPSClient {
 
     this.hostname = hostname;
     this.basePath = basePath;
+    this.headers = {
+      Authorization: `Bot ${process.env.DiscordBotToken}`
+    };
   }
 
-  request (method, endpoint, headers = {}) {
+  request (method, endpoint) {
     if (endpoint[0] !== '/') {
       endpoint = '/' + endpoint;
     }
@@ -19,7 +22,7 @@ class HTTPSClient {
       hostname: this.hostname,
       path: encodeURI(this.basePath + endpoint),
       method: method,
-      headers: headers
+      headers: this.headers
     };
 
     return new Promise((resolve, reject) => {
