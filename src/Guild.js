@@ -168,7 +168,7 @@ function parseLines (lines) {
       continue;
     }
 
-    items.push({ reaction: split[0].trim(), role: split[1].replace(/[ `]/g, '') });
+    items.push({ reaction: split[0].trim(), role: split[1].replace(/[`]/g, '') });
   }
 
   return items;
