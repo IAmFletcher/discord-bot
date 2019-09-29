@@ -50,6 +50,10 @@ class Guild {
   }
 
   _handleMessage (msg, action) {
+    if (msg.d.author === undefined) {
+      return;
+    }
+
     if (!this.hasPermission(msg.d.author.id, msg.d.member.roles)) {
       return;
     }
