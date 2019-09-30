@@ -81,16 +81,7 @@ class Guild {
   }
 
   _insertItemsIntoDB (msgID, items) {
-    const reaction = items.filter(item => item.reaction.includes('<'));
-    const unicode = items.filter(item => !item.reaction.includes('<'));
-
-    if (reaction.length) {
-      database.query('INSERT INTO messages (guild_id, message_id, is_unicode, reaction, role) VALUES (?)', reaction.map(item => [this.id, msgID, false, item.reaction, item.role]));
-    }
-
-    if (unicode.length) {
-      database.query('INSERT INTO messages (guild_id, message_id, is_unicode, unicode, role) VALUES (?)', unicode.map(item => [this.id, msgID, true, item.reaction.codePointAt(0), item.role]));
-    }
+    database.query('INSERT INTO messages (guild_id, message_id, reaction, role) VALUES (?)', items.map(item => [this.id, msgID, item.reaction, item.role]));
   }
 
   reactionAdd (msg) {
@@ -108,14 +99,8 @@ class Guild {
       }
 
       for (let i = 0; i < results.length; i++) {
-        if (msg.d.emoji.name[0] === '<') {
-          if (msg.d.emoji.name === results[i].reaction) {
-            this.addGuildRequest(command, `guilds/${this.id}/members/${msg.d.user_id}/roles/${this.roles[results[i].role]}`);
-          }
-        } else {
-          if (msg.d.emoji.name.codePointAt(0) === results[i].unicode) {
-            this.addGuildRequest(command, `guilds/${this.id}/members/${msg.d.user_id}/roles/${this.roles[results[i].role]}`);
-          }
+        if (msg.d.emoji.name === results[i].reaction) {
+          this.addGuildRequest(command, `guilds/${this.id}/members/${msg.d.user_id}/roles/${this.roles[results[i].role]}`);
         }
       }
     });
