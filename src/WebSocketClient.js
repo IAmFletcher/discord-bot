@@ -50,6 +50,9 @@ class WebSocketClient extends EventEmitter {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
 
     switch (code) {
+      case 1001:
+        this.connect();
+        break;
       case 4000: // unknown error
         this.connect();
         break;
