@@ -1,5 +1,6 @@
 const EventEmitter = require('events');
 const WebSocket = require('ws');
+const autoBind = require('auto-bind');
 
 class WebSocketClient extends EventEmitter {
   constructor (token, os, name) {
@@ -9,79 +10,96 @@ class WebSocketClient extends EventEmitter {
     this._os = os;
     this._name = name;
 
-    this._session_id = null;
+    this._sessionID = null;
     this._lastSequence = null;
 
-    this.sendHeartbeat = this.sendHeartbeat.bind(this);
+    autoBind(this);
   }
 
   connect (url) {
     this._websocket = new WebSocket(url);
 
     this._websocket.on('open', () => {
-      console.log('Gateway Opened');
+      this._onOpen();
     });
 
     this._websocket.on('close', (code, reason) => {
-      console.log(`Gateway Closed: ${code} ${reason}`);
+      this._onClose(code, reason);
     });
 
     this._websocket.on('error', (err) => {
-      throw err;
+      this._onError(err);
     });
 
     this._websocket.on('message', (e) => {
-      const msg = JSON.parse(e);
-
-      if (msg.op === 0) {
-        console.log(`Received [${msg.op}] - ${msg.t}`);
-      } else {
-        console.log(`Received [${msg.op}]`);
-      }
-
-      if (Object.prototype.hasOwnProperty.call(msg, 's')) {
-        this._lastSequence = msg.s;
-      }
-
-      switch (msg.op) {
-        case 0: // Dispatch
-          if (msg.t === 'READY') {
-            if (this._session_id === null) {
-              this._session_id = msg.d._session_id;
-              return;
-            }
-
-            console.log('Resuming');
-            this.sendPayload(6, { token: this._token, session_id: this._session_id, seq: this._lastSequence });
-            return;
-          }
-
-          if (msg.t === 'RESUMED') {
-            this._session_id = msg.d._session_id;
-            return;
-          }
-
-          this.emit(msg.t, msg);
-          break;
-        case 1: // Heartbeat
-          break;
-        case 7: // Reconnect
-          break;
-        case 9: // Invalid Session
-          console.warn('Invalid Session');
-          setTimeout(this.sendIdentityPayload, 5000);
-          break;
-        case 10: // Hello
-          this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
-
-          this.sendIdentityPayload();
-          break;
-        case 11: // Heartbeat ACK
-          this._heartbeatACK = true;
-          break;
-        default:
-      }
+      this._onMessage(JSON.parse(e));
     });
+  }
+
+  _onOpen () {
+    console.log('Gateway Opened');
+  }
+
+  _onClose (code, reason) {
+    console.log(`Gateway Closed: ${code} ${reason}`.trim());
+  }
+
+  _onError (err) {
+    console.warn(`Gateway Error: ${err}`);
+  }
+
+  _onMessage (msg) {
+    if (msg.op === 0) {
+      console.log(`Received [${msg.op}] - ${msg.t}`);
+    } else {
+      console.log(`Received [${msg.op}]`);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(msg, 's')) {
+      this._lastSequence = msg.s;
+    }
+
+    switch (msg.op) {
+      case 0: // Dispatch
+        this._onDispatchMessage(msg);
+        break;
+      case 1: // Heartbeat
+        break;
+      case 7: // Reconnect
+        break;
+      case 9: // Invalid Session
+        console.warn('Invalid Session');
+        setTimeout(this.sendIdentityPayload, 5000);
+        break;
+      case 10: // Hello
+        this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
+        this.sendIdentityPayload();
+        break;
+      case 11:
+        this._heartbeatACK = true;
+        break;
+      default:
+        console.warn(`No case for Opcode ${msg.op}: ${msg}`);
+    }
+  }
+
+  _onDispatchMessage (msg) {
+    switch (msg.t) {
+      case 'READY':
+        if (this._sessionID === null) {
+          this._sessionID = msg.d.session_id;
+          break;
+        }
+
+        console.log('Resuming');
+        this.sendResumePayload();
+        break;
+      case 'RESUMED':
+        this._sessionID = msg.d.session_id;
+        break;
+      default:
+        this.emit(msg.t, msg);
+    }
   }
 
   disconnect () {
@@ -124,6 +142,16 @@ class WebSocketClient extends EventEmitter {
     };
 
     this.sendPayload(2, data);
+  }
+
+  sendResumePayload () {
+    const data = {
+      token: this._token,
+      session_id: this._session_id,
+      seq: this._lastSequence
+    };
+
+    this.sendPayload(6, data);
   }
 
   sendHeartbeat () {
