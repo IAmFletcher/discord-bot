@@ -17,7 +17,11 @@ class WebSocketClient extends EventEmitter {
   }
 
   connect (url) {
-    this._websocket = new WebSocket(url);
+    if (!this._url) {
+      this._url = url;
+    }
+
+    this._websocket = new WebSocket(this._url);
 
     this._websocket.on('open', () => {
       this._onOpen();
@@ -42,6 +46,40 @@ class WebSocketClient extends EventEmitter {
 
   _onClose (code, reason) {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
+
+    switch (code) {
+      case 4000: // unknown error
+        this.connect();
+        break;
+      case 4001: // unknown opcode
+        break;
+      case 4002: // decode error
+        break;
+      case 4003: // not authenticated
+        break;
+      case 4004: // authentication failed
+        console.error('The account token sent with your identify payload is incorrect.');
+        process.exit();
+      case 4005: // already authenticated
+        break;
+      case 4007: // invalid seq
+        this._sessionID = null;
+        this.connect();
+        break;
+      case 4008: // rate limited
+        console.error('Woah nelly! You\'re sending payloads to us too quickly. Slow it down!');
+        process.exit();
+      case 4009: // session timeout
+        this.connect(); // May need to reset _sessionID
+        break;
+      case 4010: // invalid shard
+        break;
+      case 4011: // sharding required
+        console.error('The session would have handled too many guilds - you are required to shard your connection in order to connect.');
+        process.exit();
+      default:
+        console.warn(`No case for Code: ${code}}`);
+    }
   }
 
   _onError (err) {
