@@ -13,6 +13,8 @@ class WebSocketClient extends EventEmitter {
     this._sessionID = null;
     this._lastSequence = null;
 
+    this._identityTimestamp = null;
+
     autoBind(this);
   }
 
@@ -170,6 +172,13 @@ class WebSocketClient extends EventEmitter {
   }
 
   sendIdentityPayload () {
+    if (!this._identityTimestamp && (Date.now() - this._identityTimestamp) < 5000) {
+      setTimeout(this.sendIdentityPayload, 5000);
+      return;
+    }
+
+    this._identityTimestamp = Date.now();
+
     const data = {
       token: this._token,
       properties: {
