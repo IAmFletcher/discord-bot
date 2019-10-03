@@ -50,6 +50,8 @@ class WebSocketClient extends EventEmitter {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
 
     switch (code) {
+      case 1000:
+        break;
       case 1001:
         this.connect();
         break;
@@ -151,7 +153,7 @@ class WebSocketClient extends EventEmitter {
     }
 
     clearInterval(this._heartbeatInterval);
-    this._websocket.close();
+    this._websocket.close(1000);
   }
 
   sendPayload (op, data, sequence, type) {
