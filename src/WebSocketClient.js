@@ -9,6 +9,7 @@ class WebSocketClient extends EventEmitter {
     this._os = os;
     this._name = name;
 
+    this._session_id = null;
     this._lastSequence = null;
 
     this.sendHeartbeat = this.sendHeartbeat.bind(this);
@@ -44,6 +45,22 @@ class WebSocketClient extends EventEmitter {
 
       switch (msg.op) {
         case 0: // Dispatch
+          if (msg.t === 'READY') {
+            if (this._session_id === null) {
+              this._session_id = msg.d._session_id;
+              return;
+            }
+
+            console.log('Resuming');
+            this.sendPayload(6, { token: this._token, session_id: this._session_id, seq: this._lastSequence });
+            return;
+          }
+
+          if (msg.t === 'RESUMED') {
+            this._session_id = msg.d._session_id;
+            return;
+          }
+
           this.emit(msg.t, msg);
           break;
         case 1: // Heartbeat
@@ -51,6 +68,8 @@ class WebSocketClient extends EventEmitter {
         case 7: // Reconnect
           break;
         case 9: // Invalid Session
+          console.warn('Invalid Session');
+          setTimeout(this.sendIdentityPayload, 5000);
           break;
         case 10: // Hello
           this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
