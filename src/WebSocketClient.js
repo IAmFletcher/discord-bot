@@ -55,6 +55,9 @@ class WebSocketClient extends EventEmitter {
       case 1001:
         this.connect();
         break;
+      case 1006:
+        this.connect();
+        break;
       case 4000: // unknown error
         this.connect();
         break;
