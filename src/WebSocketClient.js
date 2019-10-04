@@ -111,6 +111,7 @@ class WebSocketClient extends EventEmitter {
       case 1: // Heartbeat
         break;
       case 7: // Reconnect
+        this.disconnect(1001);
         break;
       case 9: // Invalid Session
         console.warn('Invalid Session');
@@ -147,13 +148,13 @@ class WebSocketClient extends EventEmitter {
     }
   }
 
-  disconnect () {
+  disconnect (code, reason = '') {
     if (this._websocket === undefined) {
       return;
     }
 
     clearInterval(this._heartbeatInterval);
-    this._websocket.close(1000);
+    this._websocket.close(code, reason);
   }
 
   sendPayload (op, data, sequence, type) {
@@ -210,7 +211,7 @@ class WebSocketClient extends EventEmitter {
     if (this._heartbeatACK !== undefined && this._heartbeatACK === false) {
       clearInterval(this._heartbeatInterval);
 
-      this._websocket.close(4000, 'No Heartbeat ACK');
+      this.disconnect(4000, 'No Heartbeat ACK');
       console.log('Closed: No Heartbeat ACK');
       return;
     }

@@ -63,7 +63,7 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
 });
 
 process.on('SIGINT', () => {
-  gatewayClient.disconnect();
+  gatewayClient.disconnect(1000);
   database.end();
 
   Object.keys(guilds).forEach((id) => {
