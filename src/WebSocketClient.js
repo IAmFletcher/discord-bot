@@ -50,12 +50,15 @@ class WebSocketClient extends EventEmitter {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
 
     switch (code) {
-      case 1000:
+      case 1000: // Normal Closure
         break;
-      case 1001:
+      case 1001: // Going Away
         this.connect();
         break;
-      case 1006:
+      case 1006: // Abnormal Closure
+        this.connect();
+        break;
+      case 1011: // Internal Error
         this.connect();
         break;
       case 4000: // unknown error
@@ -89,6 +92,7 @@ class WebSocketClient extends EventEmitter {
         process.exit();
       default:
         console.warn(`No case for Code: ${code}}`);
+        process.exit();
     }
   }
 
