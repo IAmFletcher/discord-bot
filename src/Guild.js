@@ -1,7 +1,7 @@
 const autoBind = require('auto-bind');
 
 const apiClient = require('./apiClient');
-const { database } = require('./database');
+const { insertPromise, deletePromise, selectPromise } = require('./database');
 
 class Guild {
   constructor ({ id, ownerID, roles }) {
@@ -46,7 +46,10 @@ class Guild {
   }
 
   messageDelete (msg) {
-    database.query('DELETE FROM messages WHERE guild_id = ? AND message_id = ?', [this.id, msg.d.id]);
+    deletePromise('messages', {
+      guild_id: this.id,
+      message_id: msg.d.id
+    });
   }
 
   _handleMessage (msg, action) {
@@ -67,7 +70,10 @@ class Guild {
     items = items.filter((item) => this.isRole(item.role));
 
     if (action === 'UPDATE') {
-      database.query('DELETE FROM messages WHERE guild_id = ? AND message_id = ?', [this.id, msg.d.id]);
+      deletePromise('messages', {
+        guild_id: this.id,
+        message_id: msg.d.id
+      });
     }
 
     this._addReactions(msg.d.channel_id, msg.d.id, items);
@@ -81,7 +87,7 @@ class Guild {
   }
 
   _insertItemsIntoDB (msgID, items) {
-    database.query('INSERT INTO messages (guild_id, message_id, reaction, role) VALUES (?)', items.map(item => [this.id, msgID, item.reaction, item.role]));
+    insertPromise('messages', ['guild_id', 'message_id', 'reaction', 'role'], items.map(item => [this.id, msgID, item.reaction, item.role]));
   }
 
   reactionAdd (msg) {
@@ -93,17 +99,22 @@ class Guild {
   }
 
   _handleReaction (msg, command) {
-    database.query('SELECT * FROM messages WHERE guild_id = ? AND message_id = ?', [this.id, msg.d.message_id], (err, results, fields) => {
-      if (err) {
-        throw err;
-      }
+    selectPromise('messages', {
+      guild_id: this.id,
+      message_id: msg.d.message_id
+    })
+      .then(({ results }) => {
+        for (let i = 0; i < results.length; i++) {
+          if (msg.d.emoji.name !== results[i].reaction) {
+            return;
+          }
 
-      for (let i = 0; i < results.length; i++) {
-        if (msg.d.emoji.name === results[i].reaction) {
           this.addGuildRequest(command, `guilds/${this.id}/members/${msg.d.user_id}/roles/${this.roles[results[i].role]}`);
         }
-      }
-    });
+      })
+      .catch((err) => {
+        throw err;
+      });
   }
 
   addRequest (id, method, endpoint) {
