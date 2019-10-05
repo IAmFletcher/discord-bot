@@ -6,6 +6,10 @@
 
 A simple Discord bot written in Node.js that assigns roles when you react to messages.
 
+## Contributing
+
+If you'd like to contribute to the project, please read the [Contributing Guidelines](CONTRIBUTING.md) first.
+
 ## License
 
 [MIT](LICENSE)
