@@ -15,7 +15,7 @@ class WebSocketClient extends EventEmitter {
     this._sessionID = null;
     this._lastSequence = null;
 
-    this._identityTimestamp = null;
+    this._identifyTimestamp = null;
 
     autoBind(this);
   }
@@ -102,7 +102,7 @@ class WebSocketClient extends EventEmitter {
         break;
       case 10: // Hello
         this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
-        this.sendIdentityPayload();
+        this.sendIdentifyPayload();
         break;
       case 11:
         this._heartbeatACK = true;
@@ -160,9 +160,9 @@ class WebSocketClient extends EventEmitter {
     console.log(`Sent [${op}]`);
   }
 
-  sendIdentityPayload () {
-    if (!this._identityTimestamp && (Date.now() - this._identityTimestamp) < 5000) {
-      setTimeout(this.sendIdentityPayload, 5000);
+  sendIdentifyPayload () {
+    if (!this._identifyTimestamp && (Date.now() - this._identifyTimestamp) < 5000) {
+      setTimeout(this.sendIdentifyPayload, 5000);
       return;
     }
 
