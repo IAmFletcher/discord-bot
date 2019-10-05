@@ -2,6 +2,8 @@ const EventEmitter = require('events');
 const WebSocket = require('ws');
 const autoBind = require('auto-bind');
 
+const UNRECOVERABLE_CODES = [4000, 4004, 4008, 4010, 4011];
+
 class WebSocketClient extends EventEmitter {
   constructor (token, os, name) {
     super();
@@ -49,51 +51,17 @@ class WebSocketClient extends EventEmitter {
   _onClose (code, reason) {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
 
-    switch (code) {
-      case 1000: // Normal Closure
-        break;
-      case 1001: // Going Away
-        this.connect();
-        break;
-      case 1006: // Abnormal Closure
-        this.connect();
-        break;
-      case 1011: // Internal Error
-        this.connect();
-        break;
-      case 4000: // unknown error
-        this.connect();
-        break;
-      case 4001: // unknown opcode
-        break;
-      case 4002: // decode error
-        break;
-      case 4003: // not authenticated
-        break;
-      case 4004: // authentication failed
-        console.error('The account token sent with your identify payload is incorrect.');
-        process.exit();
-      case 4005: // already authenticated
-        break;
-      case 4007: // invalid seq
-        this._sessionID = null;
-        this.connect();
-        break;
-      case 4008: // rate limited
-        console.error('Woah nelly! You\'re sending payloads to us too quickly. Slow it down!');
-        process.exit();
-      case 4009: // session timeout
-        this.connect(); // May need to reset _sessionID
-        break;
-      case 4010: // invalid shard
-        break;
-      case 4011: // sharding required
-        console.error('The session would have handled too many guilds - you are required to shard your connection in order to connect.');
-        process.exit();
-      default:
-        console.warn(`No case for Code: ${code}}`);
-        process.exit();
+    if (code === 1000 || UNRECOVERABLE_CODES.includes(code)) {
+      console.error('Unrecoverable: ' + code);
+      process.exit();
     }
+
+    if (code === 4006) {
+      console.log('Cannot Resume on Code 4006');
+      this.session_id = null;
+    }
+
+    this.connect();
   }
 
   _onError (err) {
@@ -116,13 +84,21 @@ class WebSocketClient extends EventEmitter {
         this._onDispatchMessage(msg);
         break;
       case 1: // Heartbeat
+        this.sendHeartbeat();
         break;
       case 7: // Reconnect
         this.disconnect(1001);
         break;
       case 9: // Invalid Session
         console.warn('Invalid Session');
-        setTimeout(this.sendIdentityPayload, 5000);
+
+        if (msg.d) {
+          setTimeout(this.sendResumePayload, 5000);
+          return;
+        }
+
+        this._sessionID = null;
+        this.disconnect(1001);
         break;
       case 10: // Hello
         this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
