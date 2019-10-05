@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const autoBind = require('auto-bind');
 
 const UNRECOVERABLE_CODES = [4000, 4004, 4008, 4010, 4011];
+const DAY_IN_MILLISECONDS = 24 * 3600000;
 
 class WebSocketClient extends EventEmitter {
   constructor (token, os, name) {
@@ -15,7 +16,8 @@ class WebSocketClient extends EventEmitter {
     this._sessionID = null;
     this._lastSequence = null;
 
-    this._identityTimestamp = null;
+    this._identifyCalls = [];
+    this._identifyTimestamp = null;
 
     autoBind(this);
   }
@@ -51,13 +53,17 @@ class WebSocketClient extends EventEmitter {
   _onClose (code, reason) {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
 
-    if (code === 1000 || UNRECOVERABLE_CODES.includes(code)) {
-      console.error('Unrecoverable: ' + code);
+    if (code === 1000) {
+      process.exit();
+    }
+
+    if (UNRECOVERABLE_CODES.includes(code)) {
+      console.error(`Gateway Closed: ${code} ${reason}`.trim());
       process.exit();
     }
 
     if (code === 4006) {
-      console.log('Cannot Resume on Code 4006');
+      console.log('Cannot Resume');
       this.session_id = null;
     }
 
@@ -84,7 +90,7 @@ class WebSocketClient extends EventEmitter {
         this._onDispatchMessage(msg);
         break;
       case 1: // Heartbeat
-        this.sendHeartbeat();
+        this.sendHeartbeatPayload();
         break;
       case 7: // Reconnect
         this.disconnect(1001);
@@ -101,8 +107,8 @@ class WebSocketClient extends EventEmitter {
         this.disconnect(1001);
         break;
       case 10: // Hello
-        this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
-        this.sendIdentityPayload();
+        this._heartbeatInterval = setInterval(this.sendHeartbeatPayload, msg.d.heartbeat_interval);
+        this.sendIdentifyPayload();
         break;
       case 11:
         this._heartbeatACK = true;
@@ -160,13 +166,18 @@ class WebSocketClient extends EventEmitter {
     console.log(`Sent [${op}]`);
   }
 
-  sendIdentityPayload () {
-    if (!this._identityTimestamp && (Date.now() - this._identityTimestamp) < 5000) {
-      setTimeout(this.sendIdentityPayload, 5000);
+  sendIdentifyPayload () {
+    if (!this._identifyTimestamp && (Date.now() - this._identifyTimestamp) < 5000) {
+      setTimeout(this.sendIdentifyPayload, 5000);
       return;
     }
 
-    this._identityTimestamp = Date.now();
+    if (this._identifyCalls.count === 1000) {
+      console.error('Hit maximum Identity payloads in 24 hours');
+      process.exit(1);
+    }
+
+    this._addIdentifyCall();
 
     const data = {
       token: this._token,
@@ -180,6 +191,15 @@ class WebSocketClient extends EventEmitter {
     this.sendPayload(2, data);
   }
 
+  _addIdentifyCall () {
+    this._identifyTimestamp = Date.now();
+
+    // Remove if it happened later than the past 24 hours
+    this._identifyCalls = this._identifyCalls.filter((call) => call >= Date.now() - DAY_IN_MILLISECONDS);
+
+    this._identifyCalls.push(this._identifyTimestamp);
+  }
+
   sendResumePayload () {
     const data = {
       token: this._token,
@@ -190,7 +210,7 @@ class WebSocketClient extends EventEmitter {
     this.sendPayload(6, data);
   }
 
-  sendHeartbeat () {
+  sendHeartbeatPayload () {
     if (this._heartbeatACK !== undefined && this._heartbeatACK === false) {
       clearInterval(this._heartbeatInterval);
 

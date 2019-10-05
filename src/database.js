@@ -1,8 +1,6 @@
 const process = require('process');
 const mysql = require('mysql');
 
-const DB_VERSION = '1';
-
 const database = mysql.createConnection({
   host: 'localhost',
   user: process.env.SQLUser,
@@ -32,6 +30,36 @@ function queryPromise (...params) {
       resolve({ results, fields });
     });
   });
+}
+
+function insertPromise (table, columns, values) {
+  return queryPromise(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (?)`, values);
+}
+
+function deletePromise (table, conditions) {
+  const conditionsArray = [];
+  let column = null;
+
+  for (column in conditions) {
+    if (Object.prototype.hasOwnProperty.call(conditions, column)) {
+      conditionsArray.push(`${column} = ${conditions[column]}`);
+    }
+  }
+
+  return queryPromise(`DELETE FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
+}
+
+function selectPromise (table, conditions) {
+  const conditionsArray = [];
+  let column = null;
+
+  for (column in conditions) {
+    if (Object.prototype.hasOwnProperty.call(conditions, column)) {
+      conditionsArray.push(`${column} = ${conditions[column]}`);
+    }
+  }
+
+  return queryPromise(`SELECT * FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
 }
 
 async function initDatabase () {
@@ -68,4 +96,4 @@ async function migrateTo1 () {
   console.log('Migration to 1 Completed');
 }
 
-module.exports = { database, initDatabase };
+module.exports = { database, initDatabase, insertPromise, deletePromise, selectPromise };
