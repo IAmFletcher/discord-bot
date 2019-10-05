@@ -53,13 +53,17 @@ class WebSocketClient extends EventEmitter {
   _onClose (code, reason) {
     console.log(`Gateway Closed: ${code} ${reason}`.trim());
 
-    if (code === 1000 || UNRECOVERABLE_CODES.includes(code)) {
-      console.error('Unrecoverable: ' + code);
+    if (code === 1000) {
+      process.exit();
+    }
+
+    if (UNRECOVERABLE_CODES.includes(code)) {
+      console.error(`Gateway Closed: ${code} ${reason}`.trim());
       process.exit();
     }
 
     if (code === 4006) {
-      console.log('Cannot Resume on Code 4006');
+      console.log('Cannot Resume');
       this.session_id = null;
     }
 
@@ -206,7 +210,7 @@ class WebSocketClient extends EventEmitter {
     this.sendPayload(6, data);
   }
 
-  sendHeartbeat () {
+  sendHeartbeatPayload () {
     if (this._heartbeatACK !== undefined && this._heartbeatACK === false) {
       clearInterval(this._heartbeatInterval);
 
