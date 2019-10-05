@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const autoBind = require('auto-bind');
 
 const UNRECOVERABLE_CODES = [4000, 4004, 4008, 4010, 4011];
+const DAY_IN_MILLISECONDS = 24 * 3600000;
 
 class WebSocketClient extends EventEmitter {
   constructor (token, os, name) {
@@ -15,6 +16,7 @@ class WebSocketClient extends EventEmitter {
     this._sessionID = null;
     this._lastSequence = null;
 
+    this._identifyCalls = [];
     this._identifyTimestamp = null;
 
     autoBind(this);
@@ -166,7 +168,12 @@ class WebSocketClient extends EventEmitter {
       return;
     }
 
-    this._identityTimestamp = Date.now();
+    if (this._identifyCalls.count === 1000) {
+      console.error('Hit maximum Identity payloads in 24 hours');
+      process.exit(1);
+    }
+
+    this._addIdentifyCall();
 
     const data = {
       token: this._token,
@@ -178,6 +185,15 @@ class WebSocketClient extends EventEmitter {
     };
 
     this.sendPayload(2, data);
+  }
+
+  _addIdentifyCall () {
+    this._identifyTimestamp = Date.now();
+
+    // Remove if it happened later than the past 24 hours
+    this._identifyCalls = this._identifyCalls.filter((call) => call >= Date.now() - DAY_IN_MILLISECONDS);
+
+    this._identifyCalls.push(this._identifyTimestamp);
   }
 
   sendResumePayload () {
