@@ -90,7 +90,7 @@ class WebSocketClient extends EventEmitter {
         this._onDispatchMessage(msg);
         break;
       case 1: // Heartbeat
-        this.sendHeartbeat();
+        this.sendHeartbeatPayload();
         break;
       case 7: // Reconnect
         this.disconnect(1001);
@@ -107,7 +107,7 @@ class WebSocketClient extends EventEmitter {
         this.disconnect(1001);
         break;
       case 10: // Hello
-        this._heartbeatInterval = setInterval(this.sendHeartbeat, msg.d.heartbeat_interval);
+        this._heartbeatInterval = setInterval(this.sendHeartbeatPayload, msg.d.heartbeat_interval);
         this.sendIdentifyPayload();
         break;
       case 11:
