@@ -44,8 +44,8 @@ class Guild {
     delete this.roles[oldKey];
   }
 
-  deleteRole(name) {
-    delete this.roles[name];
+  deleteRole(id) {
+    delete this.roles[this.getRoleNameByID(id)];
   }
 
   isRole (role) {

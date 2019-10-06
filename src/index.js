@@ -71,7 +71,7 @@ gatewayClient.on('GUILD_ROLE_UPDATE', (msg) => {
 });
 
 gatewayClient.on('GUILD_ROLE_DELETE', (msg) => {
-  guilds[msg.d.guild_id].deleteRole(msg.d.role.name);
+  guilds[msg.d.guild_id].deleteRole(msg.d.role_id);
 });
 
 process.on('SIGINT', () => {
