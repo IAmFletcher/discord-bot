@@ -113,7 +113,7 @@ class Guild {
         }
       })
       .catch((err) => {
-        throw err;
+        console.error(err);
       });
   }
 
