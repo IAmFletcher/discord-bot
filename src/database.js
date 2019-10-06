@@ -34,19 +34,54 @@ function queryPromise (...params) {
   });
 }
 
+function insertPromise (table, columns, values) {
+  return queryPromise(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (?)`, values);
+}
+
+function deletePromise (table, conditions) {
+  const conditionsArray = [];
+  let column = null;
+
+  for (column in conditions) {
+    if (Object.prototype.hasOwnProperty.call(conditions, column)) {
+      conditionsArray.push(`${column} = ${conditions[column]}`);
+    }
+  }
+
+  return queryPromise(`DELETE FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
+}
+
+function selectPromise (table, conditions) {
+  const conditionsArray = [];
+  let column = null;
+
+  for (column in conditions) {
+    if (Object.prototype.hasOwnProperty.call(conditions, column)) {
+      conditionsArray.push(`${column} = ${conditions[column]}`);
+    }
+  }
+
+  return queryPromise(`SELECT * FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
+}
+
 async function initDatabase () {
   await connectPromise();
   console.log('Database Connected');
+
   await queryPromise('SET character_set_server = utf8mb4;');
+
   await queryPromise('CREATE DATABASE IF NOT EXISTS bot;');
   await queryPromise('USE bot;');
-  await queryPromise('CREATE TABLE IF NOT EXISTS constants (id INT AUTO_INCREMENT UNIQUE, name VARCHAR(100) UNIQUE, value VARCHAR(100), key(id));');
 
+  await queryPromise('CREATE TABLE IF NOT EXISTS constants (id INT AUTO_INCREMENT UNIQUE, name VARCHAR(100) UNIQUE, value VARCHAR(100), key(id));');
+  await queryPromise('CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT UNIQUE, guild_id VARCHAR(64), message_id VARCHAR(64), reaction VARCHAR(100), role VARCHAR(100), key(id));');
+
+  await queryPromise('INSERT IGNORE INTO constants (name, value) VALUES ("db_version", ?);', DB_VERSION);
   const response = await queryPromise('SELECT * FROM constants WHERE name = "db_version";');
   const version = (response.results.length && response.results[0].value) || '';
 
   switch (version) {
-    case '1':
+    case DB_VERSION:
       break;
     default:
       migrateTo1();
@@ -64,8 +99,8 @@ async function migrateTo1 () {
   }));
 
   await queryPromise('ALTER TABLE messages DROP COLUMN is_unicode, DROP COLUMN unicode;');
-  await queryPromise('INSERT INTO constants (name, value) VALUES ("db_version", "3") ON DUPLICATE KEY UPDATE value = "3";');
+  await queryPromise('INSERT INTO constants (name, value) VALUES ("db_version", "1") ON DUPLICATE KEY UPDATE value = "1";');
   console.log('Migration to 1 Completed');
 }
 
-module.exports = { database, initDatabase };
+module.exports = { database, initDatabase, insertPromise, deletePromise, selectPromise };
