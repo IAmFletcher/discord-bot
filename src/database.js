@@ -99,7 +99,7 @@ async function migrateTo1 () {
   }));
 
   await queryPromise('ALTER TABLE messages DROP COLUMN is_unicode, DROP COLUMN unicode;');
-  await queryPromise('INSERT INTO constants (name, value) VALUES ("db_version", "3") ON DUPLICATE KEY UPDATE value = "3";');
+  await queryPromise('INSERT INTO constants (name, value) VALUES ("db_version", "1") ON DUPLICATE KEY UPDATE value = "1";');
   console.log('Migration to 1 Completed');
 }
 
