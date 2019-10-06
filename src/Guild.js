@@ -75,6 +75,21 @@ class Guild {
     });
   }
 
+   messageDeleteBulk (msg) {
+    selectPromise('messages', {
+      guild_id: this.id
+    }).then(({ results }) => {
+      for (let i = 0; i < results.length; i++) {
+        if (msg.d.ids.includes(results[i].message_id)) {
+          deletePromise('messages', {
+            guild_id: this.id,
+            message_id: results[i].message_id
+          });
+        }
+      }
+    });
+  }
+
   _handleMessage (msg, action) {
     if (msg.d.author === undefined) {
       return;

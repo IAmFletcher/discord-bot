@@ -62,6 +62,11 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
   guilds[msg.d.guild_id].reactionRemove(msg);
 });
 
+
+gatewayClient.on('MESSAGE_DELETE_BULK', (msg) => {
+  guilds[msg.d.guild_id].messageDeleteBulk(msg);
+});
+
 gatewayClient.on('GUILD_ROLE_CREATE', (msg) => {
   guilds[msg.d.guild_id].addRole(msg.d.role.id, msg.d.role.name);
 });
