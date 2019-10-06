@@ -69,6 +69,7 @@ async function initDatabase () {
   await queryPromise('CREATE DATABASE IF NOT EXISTS bot;');
   await queryPromise('USE bot;');
   await queryPromise('CREATE TABLE IF NOT EXISTS constants (id INT AUTO_INCREMENT UNIQUE, name VARCHAR(100) UNIQUE, value VARCHAR(100), key(id));');
+  await queryPromise('CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT UNIQUE, guild_id VARCHAR(64), message_id VARCHAR(64), reaction VARCHAR(100), role VARCHAR(100), key(id));');
 
   const response = await queryPromise('SELECT * FROM constants WHERE name = "db_version";');
   const version = (response.results.length && response.results[0].value) || '';
