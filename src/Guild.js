@@ -62,12 +62,11 @@ class Guild {
     }
 
     let items = parseMessage(msg.d.content);
+    items = items.filter((item) => this.isRole(item.role));
 
-    if (items === undefined) {
+    if (!items.length) {
       return;
     }
-
-    items = items.filter((item) => this.isRole(item.role));
 
     if (action === 'UPDATE') {
       deletePromise('messages', {
