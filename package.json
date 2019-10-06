@@ -1,6 +1,6 @@
 {
   "name": "discord-bot",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A simple Discord bot written in Node.js that assigns roles when you react to messages.",
   "main": "index.js",
   "repository": "git@github.com:IAmFletcher/discord-bot.git",
