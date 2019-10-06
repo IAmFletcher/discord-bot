@@ -25,6 +25,29 @@ class Guild {
     autoBind(this);
   }
 
+  getRoleNameByID (value) {
+    return Object.keys(this.roles).find(key => this.roles[key] === value);
+  }
+
+  addRole (id, name) {
+    this.roles[name] = id;
+  }
+
+  updateRoleName (id, name) {
+    const oldKey = this.getRoleNameByID(id);
+
+    if(this.isRole(name)) {
+      return;
+    }
+
+    this.roles[name] = id;
+    delete this.roles[oldKey];
+  }
+
+  deleteRole(id) {
+    delete this.roles[this.getRoleNameByID(id)];
+  }
+
   isRole (role) {
     return Boolean(this.roles[role]);
   }
