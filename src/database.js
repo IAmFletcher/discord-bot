@@ -10,9 +10,9 @@ const database = mysql.createConnection({
   charset: 'utf8mb4'
 });
 
-function connectPromise () {
+function connectPromise() {
   return new Promise((resolve, reject) => {
-    database.connect((err) => {
+    database.connect(err => {
       if (err) {
         return reject(err);
       }
@@ -22,7 +22,7 @@ function connectPromise () {
   });
 }
 
-function queryPromise (...params) {
+function queryPromise(...params) {
   return new Promise((resolve, reject) => {
     database.query(...params, (err, results, fields) => {
       if (err) {
@@ -34,11 +34,14 @@ function queryPromise (...params) {
   });
 }
 
-function insertPromise (table, columns, values) {
-  return queryPromise(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (?)`, values);
+function insertPromise(table, columns, values) {
+  return queryPromise(
+    `INSERT INTO ${table} (${columns.join(', ')}) VALUES (?)`,
+    values
+  );
 }
 
-function deletePromise (table, conditions) {
+function deletePromise(table, conditions) {
   const conditionsArray = [];
   let column = null;
 
@@ -48,10 +51,12 @@ function deletePromise (table, conditions) {
     }
   }
 
-  return queryPromise(`DELETE FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
+  return queryPromise(
+    `DELETE FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';'
+  );
 }
 
-function selectPromise (table, conditions) {
+function selectPromise(table, conditions) {
   const conditionsArray = [];
   let column = null;
 
@@ -61,10 +66,12 @@ function selectPromise (table, conditions) {
     }
   }
 
-  return queryPromise(`SELECT * FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
+  return queryPromise(
+    `SELECT * FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';'
+  );
 }
 
-async function initDatabase () {
+async function initDatabase() {
   await connectPromise();
   console.log('Database Connected');
 
@@ -73,11 +80,20 @@ async function initDatabase () {
   await queryPromise('CREATE DATABASE IF NOT EXISTS bot;');
   await queryPromise('USE bot;');
 
-  await queryPromise('CREATE TABLE IF NOT EXISTS constants (id INT AUTO_INCREMENT UNIQUE, name VARCHAR(100) UNIQUE, value VARCHAR(100), key(id));');
-  await queryPromise('CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT UNIQUE, guild_id VARCHAR(64), message_id VARCHAR(64), reaction VARCHAR(100), role VARCHAR(100), key(id));');
+  await queryPromise(
+    'CREATE TABLE IF NOT EXISTS constants (id INT AUTO_INCREMENT UNIQUE, name VARCHAR(100) UNIQUE, value VARCHAR(100), key(id));'
+  );
+  await queryPromise(
+    'CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT UNIQUE, guild_id VARCHAR(64), message_id VARCHAR(64), reaction VARCHAR(100), role VARCHAR(100), key(id));'
+  );
 
-  await queryPromise('INSERT IGNORE INTO constants (name, value) VALUES ("db_version", ?);', DB_VERSION);
-  const response = await queryPromise('SELECT * FROM constants WHERE name = "db_version";');
+  await queryPromise(
+    'INSERT IGNORE INTO constants (name, value) VALUES ("db_version", ?);',
+    DB_VERSION
+  );
+  const response = await queryPromise(
+    'SELECT * FROM constants WHERE name = "db_version";'
+  );
   const version = (response.results.length && response.results[0].value) || '';
 
   switch (version) {
@@ -90,17 +106,34 @@ async function initDatabase () {
   console.log('Database Setup Complete');
 }
 
-async function migrateTo1 () {
+async function migrateTo1() {
   console.log('Migration To 1 Started');
-  const response = await queryPromise('SELECT * FROM messages WHERE is_unicode = TRUE;');
+  const response = await queryPromise(
+    'SELECT * FROM messages WHERE is_unicode = TRUE;'
+  );
 
-  await Promise.all(response.results.map((row) => {
-    return queryPromise('UPDATE messages SET reaction = ? WHERE id = ?;', [String.fromCodePoint(row.unicode), row.id]);
-  }));
+  await Promise.all(
+    response.results.map(row => {
+      return queryPromise('UPDATE messages SET reaction = ? WHERE id = ?;', [
+        String.fromCodePoint(row.unicode),
+        row.id
+      ]);
+    })
+  );
 
-  await queryPromise('ALTER TABLE messages DROP COLUMN is_unicode, DROP COLUMN unicode;');
-  await queryPromise('INSERT INTO constants (name, value) VALUES ("db_version", "1") ON DUPLICATE KEY UPDATE value = "1";');
+  await queryPromise(
+    'ALTER TABLE messages DROP COLUMN is_unicode, DROP COLUMN unicode;'
+  );
+  await queryPromise(
+    'INSERT INTO constants (name, value) VALUES ("db_version", "1") ON DUPLICATE KEY UPDATE value = "1";'
+  );
   console.log('Migration to 1 Completed');
 }
 
-module.exports = { database, initDatabase, insertPromise, deletePromise, selectPromise };
+module.exports = {
+  database,
+  initDatabase,
+  insertPromise,
+  deletePromise,
+  selectPromise
+};

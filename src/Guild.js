@@ -4,7 +4,7 @@ const apiClient = require('./apiClient');
 const { insertPromise, deletePromise, selectPromise } = require('./database');
 
 class Guild {
-  constructor ({ id, ownerID, roles }) {
+  constructor({ id, ownerID, roles }) {
     this.id = id;
     this.ownerID = ownerID;
     this.roles = {};
@@ -25,34 +25,49 @@ class Guild {
     autoBind(this);
   }
 
-  isRole (role) {
+  isRole(role) {
     return Boolean(this.roles[role]);
   }
 
-  hasPermission (id, roles) {
+  hasPermission(id, roles) {
     if (this.allowedUsers[id]) {
       return true;
     }
 
-    return roles.some((role) => this.allowedRoles[role]);
+    return roles.some(role => this.allowedRoles[role]);
   }
 
-  messageCreate (msg) {
+  messageCreate(msg) {
     this._handleMessage(msg, 'CREATE');
   }
 
-  messageUpdate (msg) {
+  messageUpdate(msg) {
     this._handleMessage(msg, 'UPDATE');
   }
 
-  messageDelete (msg) {
+  messageDelete(msg) {
     deletePromise('messages', {
       guild_id: this.id,
       message_id: msg.d.id
     });
   }
 
-  _handleMessage (msg, action) {
+  messageDeleteBulk(msg) {
+    selectPromise('messages', {
+      guild_id: this.id
+    }).then(({ results }) => {
+      for (let i = 0; i < results.length; i++) {
+        if (msg.d.ids.includes(results[i].message_id)) {
+          deletePromise('messages', {
+            guild_id: this.id,
+            message_id: results[i].message_id
+          });
+        }
+      }
+    });
+  }
+
+  _handleMessage(msg, action) {
     if (msg.d.author === undefined) {
       return;
     }
@@ -67,7 +82,7 @@ class Guild {
       return;
     }
 
-    items = items.filter((item) => this.isRole(item.role));
+    items = items.filter(item => this.isRole(item.role));
 
     if (action === 'UPDATE') {
       deletePromise('messages', {
@@ -80,25 +95,35 @@ class Guild {
     this._insertItemsIntoDB(msg.d.id, items);
   }
 
-  _addReactions (channelID, msgID, items) {
+  _addReactions(channelID, msgID, items) {
     items
-      .map((item) => item.reaction.replace(/(?:<:)(.*)(?:>)/, '$1'))
-      .forEach((reaction) => this.addRequest(channelID, 'PUT', `channels/${channelID}/messages/${msgID}/reactions/${reaction}/@me`));
+      .map(item => item.reaction.replace(/(?:<:)(.*)(?:>)/, '$1'))
+      .forEach(reaction =>
+        this.addRequest(
+          channelID,
+          'PUT',
+          `channels/${channelID}/messages/${msgID}/reactions/${reaction}/@me`
+        )
+      );
   }
 
-  _insertItemsIntoDB (msgID, items) {
-    insertPromise('messages', ['guild_id', 'message_id', 'reaction', 'role'], items.map(item => [this.id, msgID, item.reaction, item.role]));
+  _insertItemsIntoDB(msgID, items) {
+    insertPromise(
+      'messages',
+      ['guild_id', 'message_id', 'reaction', 'role'],
+      items.map(item => [this.id, msgID, item.reaction, item.role])
+    );
   }
 
-  reactionAdd (msg) {
+  reactionAdd(msg) {
     this._handleReaction(msg, 'PUT');
   }
 
-  reactionRemove (msg) {
+  reactionRemove(msg) {
     this._handleReaction(msg, 'DELETE');
   }
 
-  _handleReaction (msg, command) {
+  _handleReaction(msg, command) {
     selectPromise('messages', {
       guild_id: this.id,
       message_id: msg.d.message_id
@@ -109,15 +134,20 @@ class Guild {
             return;
           }
 
-          this.addGuildRequest(command, `guilds/${this.id}/members/${msg.d.user_id}/roles/${this.roles[results[i].role]}`);
+          this.addGuildRequest(
+            command,
+            `guilds/${this.id}/members/${msg.d.user_id}/roles/${
+              this.roles[results[i].role]
+            }`
+          );
         }
       })
-      .catch((err) => {
+      .catch(err => {
         console.error(err);
       });
   }
 
-  addRequest (id, method, endpoint) {
+  addRequest(id, method, endpoint) {
     if (!this.intervals[id]) {
       this.intervals[id] = setInterval(this._sendRequest, 1000, id);
     }
@@ -126,11 +156,11 @@ class Guild {
     this.queues[id].push({ method, endpoint });
   }
 
-  addGuildRequest (method, endpoint) {
+  addGuildRequest(method, endpoint) {
     this.addRequest('guild', method, endpoint);
   }
 
-  _sendRequest (id) {
+  _sendRequest(id) {
     if (this.queues[id].length === 0) {
       clearInterval(this.intervals[id]);
       delete this.intervals[id];
@@ -141,15 +171,15 @@ class Guild {
     apiClient.request(request.method, request.endpoint);
   }
 
-  clearIntervals () {
+  clearIntervals() {
     for (const id in this.intervals) {
       clearInterval(this.intervals[id]);
     }
   }
 }
 
-function parseMessage (message) {
-  const lines = message.split('\n').filter((line) => line.length > 0);
+function parseMessage(message) {
+  const lines = message.split('\n').filter(line => line.length > 0);
 
   for (let i = 0; i < lines.length; i++) {
     if (lines[i] === '**Role Menu:**') {
@@ -158,9 +188,8 @@ function parseMessage (message) {
   }
 }
 
-function parseLines (lines) {
+function parseLines(lines) {
   const items = [];
-
   for (let i = 0; i < lines.length; i++) {
     const split = lines[i].split(' : ');
 
@@ -168,7 +197,10 @@ function parseLines (lines) {
       continue;
     }
 
-    items.push({ reaction: split[0].trim(), role: split[1].replace(/[`]/g, '') });
+    items.push({
+      reaction: split[0].trim(),
+      role: split[1].replace(/[`]/g, '')
+    });
   }
 
   return items;

@@ -14,15 +14,15 @@ initDatabase()
   .then(() => {
     return apiClient.request('GET', 'gateway');
   })
-  .then((result) => {
+  .then(result => {
     gatewayClient.connect(result.data.url + '?v-6&encoding=json');
   })
-  .catch((err) => {
+  .catch(err => {
     console.error(err);
     process.exit(1);
   });
 
-gatewayClient.on('GUILD_CREATE', (msg) => {
+gatewayClient.on('GUILD_CREATE', msg => {
   if (guilds[msg.d.id]) {
     return;
   }
@@ -34,19 +34,19 @@ gatewayClient.on('GUILD_CREATE', (msg) => {
   });
 });
 
-gatewayClient.on('MESSAGE_CREATE', (msg) => {
+gatewayClient.on('MESSAGE_CREATE', msg => {
   guilds[msg.d.guild_id].messageCreate(msg);
 });
 
-gatewayClient.on('MESSAGE_UPDATE', (msg) => {
+gatewayClient.on('MESSAGE_UPDATE', msg => {
   guilds[msg.d.guild_id].messageUpdate(msg);
 });
 
-gatewayClient.on('MESSAGE_DELETE', (msg) => {
+gatewayClient.on('MESSAGE_DELETE', msg => {
   guilds[msg.d.guild_id].messageDelete(msg);
 });
 
-gatewayClient.on('MESSAGE_REACTION_ADD', (msg) => {
+gatewayClient.on('MESSAGE_REACTION_ADD', msg => {
   if (msg.d.user_id === BOT_ID) {
     return;
   }
@@ -54,7 +54,7 @@ gatewayClient.on('MESSAGE_REACTION_ADD', (msg) => {
   guilds[msg.d.guild_id].reactionAdd(msg);
 });
 
-gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
+gatewayClient.on('MESSAGE_REACTION_REMOVE', msg => {
   if (msg.d.user_id === BOT_ID) {
     return;
   }
@@ -62,11 +62,15 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
   guilds[msg.d.guild_id].reactionRemove(msg);
 });
 
+gatewayClient.on('MESSAGE_DELETE_BULK', msg => {
+  guilds[msg.d.guild_id].messageDeleteBulk(msg);
+});
+
 process.on('SIGINT', () => {
   gatewayClient.disconnect(1000);
   database.end();
 
-  Object.keys(guilds).forEach((id) => {
+  Object.keys(guilds).forEach(id => {
     guilds[id].clearIntervals();
   });
 });
