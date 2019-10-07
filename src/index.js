@@ -62,7 +62,6 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
   guilds[msg.d.guild_id].reactionRemove(msg);
 });
 
-
 gatewayClient.on('MESSAGE_DELETE_BULK', (msg) => {
   guilds[msg.d.guild_id].messageDeleteBulk(msg);
 });

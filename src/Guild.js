@@ -36,7 +36,7 @@ class Guild {
   updateRoleName (id, name) {
     const oldKey = this.getRoleNameByID(id);
 
-    if(this.isRole(name)) {
+    if (this.isRole(name)) {
       return;
     }
 
@@ -44,7 +44,7 @@ class Guild {
     delete this.roles[oldKey];
   }
 
-  deleteRole(id) {
+  deleteRole (id) {
     delete this.roles[this.getRoleNameByID(id)];
   }
 
@@ -75,7 +75,7 @@ class Guild {
     });
   }
 
-   messageDeleteBulk (msg) {
+  messageDeleteBulk (msg) {
     selectPromise('messages', {
       guild_id: this.id
     }).then(({ results }) => {
