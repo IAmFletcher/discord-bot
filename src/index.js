@@ -62,6 +62,22 @@ gatewayClient.on('MESSAGE_REACTION_REMOVE', (msg) => {
   guilds[msg.d.guild_id].reactionRemove(msg);
 });
 
+gatewayClient.on('MESSAGE_DELETE_BULK', (msg) => {
+  guilds[msg.d.guild_id].messageDeleteBulk(msg);
+});
+
+gatewayClient.on('GUILD_ROLE_CREATE', (msg) => {
+  guilds[msg.d.guild_id].addRole(msg.d.role.id, msg.d.role.name);
+});
+
+gatewayClient.on('GUILD_ROLE_UPDATE', (msg) => {
+  guilds[msg.d.guild_id].updateRoleName(msg.d.role.id, msg.d.role.name);
+});
+
+gatewayClient.on('GUILD_ROLE_DELETE', (msg) => {
+  guilds[msg.d.guild_id].deleteRole(msg.d.role_id);
+});
+
 process.on('SIGINT', () => {
   gatewayClient.disconnect(1000);
   database.end();

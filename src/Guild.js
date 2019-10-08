@@ -25,6 +25,29 @@ class Guild {
     autoBind(this);
   }
 
+  getRoleNameByID (value) {
+    return Object.keys(this.roles).find(key => this.roles[key] === value);
+  }
+
+  addRole (id, name) {
+    this.roles[name] = id;
+  }
+
+  updateRoleName (id, name) {
+    const oldKey = this.getRoleNameByID(id);
+
+    if (this.isRole(name)) {
+      return;
+    }
+
+    this.roles[name] = id;
+    delete this.roles[oldKey];
+  }
+
+  deleteRole (id) {
+    delete this.roles[this.getRoleNameByID(id)];
+  }
+
   isRole (role) {
     return Boolean(this.roles[role]);
   }
@@ -49,6 +72,21 @@ class Guild {
     deletePromise('messages', {
       guild_id: this.id,
       message_id: msg.d.id
+    });
+  }
+
+  messageDeleteBulk (msg) {
+    selectPromise('messages', {
+      guild_id: this.id
+    }).then(({ results }) => {
+      for (let i = 0; i < results.length; i++) {
+        if (msg.d.ids.includes(results[i].message_id)) {
+          deletePromise('messages', {
+            guild_id: this.id,
+            message_id: results[i].message_id
+          });
+        }
+      }
     });
   }
 
@@ -155,6 +193,8 @@ function parseMessage (message) {
       return parseLines(lines.slice(i + 1));
     }
   }
+
+  return [];
 }
 
 function parseLines (lines) {
