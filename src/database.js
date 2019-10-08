@@ -22,9 +22,9 @@ function connectPromise () {
   });
 }
 
-function queryPromise (...params) {
+function queryPromise (queryString, values) {
   return new Promise((resolve, reject) => {
-    database.query(...params, (err, results, fields) => {
+    database.query(queryString, [values], (err, results, fields) => {
       if (err) {
         return reject(err);
       }
@@ -35,7 +35,7 @@ function queryPromise (...params) {
 }
 
 function insertPromise (table, columns, values) {
-  return queryPromise(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (?)`, values);
+  return queryPromise(`INSERT INTO ${table} (${columns.join(', ')}) VALUES ?`, values);
 }
 
 function deletePromise (table, conditions) {

@@ -193,6 +193,8 @@ function parseMessage (message) {
       return parseLines(lines.slice(i + 1));
     }
   }
+
+  return [];
 }
 
 function parseLines (lines) {
