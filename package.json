@@ -7,7 +7,7 @@
   "author": "Fletcher Goss <44245838+IAmFletcher@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node index.js",
     "test": "jest"
   },
   "devDependencies": {
