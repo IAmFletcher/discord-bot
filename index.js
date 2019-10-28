@@ -1,9 +1,9 @@
 const process = require('process');
 
-const Guild = require('./Guild');
+const Guild = require('./src/Guild');
 
-const apiClient = require('./apiClient');
-const gatewayClient = require('./gatewayClient');
+const apiClient = require('./src/apiClient');
+const gatewayClient = require('./src/gatewayClient');
 
 const BOT_ID = process.env.DiscordBotID;
 

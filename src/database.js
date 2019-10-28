@@ -1,6 +1,6 @@
 const path = require('path');
-const Database = require('./lib/Database');
-const fs = require('./lib/fs');
+const Database = require('../lib/Database');
+const fs = require('../lib/fs');
 
 const DB_DIR = './db';
 const INIT_FILE = path.join(DB_DIR, 'init.sql');
