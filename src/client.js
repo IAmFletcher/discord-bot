@@ -1,4 +1,4 @@
-const HTTPSClient = require('./HTTPSClient');
+const HTTPSClient = require('../lib/HTTPSClient');
 
 const client = new HTTPSClient('discordapp.com', 'api/v6');
 
