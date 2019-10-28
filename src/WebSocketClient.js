@@ -1,17 +1,17 @@
 const EventEmitter = require('events');
 const WebSocket = require('ws');
+
 const autoBind = require('auto-bind');
+const process = require('process');
+
+const LIBRARY_NAME = 'discord-bot';
 
 const UNRECOVERABLE_CODES = [4000, 4004, 4008, 4010, 4011];
 const DAY_IN_MILLISECONDS = 24 * 3600000;
 
 class WebSocketClient extends EventEmitter {
-  constructor (token, os, name) {
+  constructor () {
     super();
-
-    this._token = token;
-    this._os = os;
-    this._name = name;
 
     this._sessionID = null;
     this._lastSequence = null;
@@ -180,11 +180,11 @@ class WebSocketClient extends EventEmitter {
     this._addIdentifyCall();
 
     const data = {
-      token: this._token,
+      token: process.env.DiscordBotToken,
       properties: {
-        $os: this._os,
-        $browser: this._name,
-        $device: this._name
+        $os: process.platform,
+        $browser: LIBRARY_NAME,
+        $device: LIBRARY_NAME
       }
     };
 
