@@ -2,7 +2,6 @@ const process = require('process');
 
 const Guild = require('./Guild');
 
-const { database, initDatabase } = require('./database');
 const apiClient = require('./apiClient');
 const gatewayClient = require('./gatewayClient');
 
@@ -10,10 +9,7 @@ const BOT_ID = process.env.DiscordBotID;
 
 const guilds = {};
 
-initDatabase()
-  .then(() => {
-    return apiClient.request('GET', 'gateway');
-  })
+apiClient.request('GET', 'gateway')
   .then((result) => {
     gatewayClient.connect(result.data.url + '?v-6&encoding=json');
   })
@@ -80,7 +76,6 @@ gatewayClient.on('GUILD_ROLE_DELETE', (msg) => {
 
 process.on('SIGINT', () => {
   gatewayClient.disconnect(1000);
-  database.end();
 
   Object.keys(guilds).forEach((id) => {
     guilds[id].clearIntervals();

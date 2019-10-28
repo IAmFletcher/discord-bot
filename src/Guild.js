@@ -1,7 +1,7 @@
 const autoBind = require('auto-bind');
 
 const apiClient = require('./apiClient');
-const { insertPromise, deletePromise, selectPromise } = require('./database');
+const db = require('./database');
 
 class Guild {
   constructor ({ id, ownerID, roles }) {
@@ -69,25 +69,32 @@ class Guild {
   }
 
   messageDelete (msg) {
-    deletePromise('messages', {
-      guild_id: this.id,
-      message_id: msg.d.id
-    });
+    db.query('DELETE FROM messages WHERE guild_id=? AND message_id=?;', [
+      this.id,
+      msg.d.id
+    ])
+      .catch((err) => {
+        console.error(err);
+      });
   }
 
   messageDeleteBulk (msg) {
-    selectPromise('messages', {
+    db.query('SELECT * FROM messages WHERE ?;', {
       guild_id: this.id
-    }).then(({ results }) => {
-      for (let i = 0; i < results.length; i++) {
-        if (msg.d.ids.includes(results[i].message_id)) {
-          deletePromise('messages', {
-            guild_id: this.id,
-            message_id: results[i].message_id
-          });
+    })
+      .then((results) => {
+        for (let i = 0; i < results.length; i++) {
+          if (msg.d.ids.includes(results[i].message_id)) {
+            return db.query('DELETE FROM messages WHERE guild_id=? AND message_id=?;', [
+              this.id,
+              results[i].message_id
+            ]);
+          }
         }
-      }
-    });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   }
 
   _handleMessage (msg, action) {
@@ -107,10 +114,13 @@ class Guild {
     }
 
     if (action === 'UPDATE') {
-      deletePromise('messages', {
-        guild_id: this.id,
-        message_id: msg.d.id
-      });
+      db.query('DELETE FROM messages WHERE guild_id=? AND message_id=?;', [
+        this.id,
+        msg.d.id
+      ])
+        .catch((err) => {
+          console.error(err);
+        });
     }
 
     this._addReactions(msg.d.channel_id, msg.d.id, items);
@@ -124,7 +134,10 @@ class Guild {
   }
 
   _insertItemsIntoDB (msgID, items) {
-    insertPromise('messages', ['guild_id', 'message_id', 'reaction', 'role'], items.map(item => [this.id, msgID, item.reaction, item.role]));
+    db.query('INSERT INTO messages (guild_id, message_id, reaction, role) VALUES ?;', [items.map(item => [this.id, msgID, item.reaction, item.role])])
+      .catch((err) => {
+        console.error(err);
+      });
   }
 
   reactionAdd (msg) {
@@ -136,14 +149,14 @@ class Guild {
   }
 
   _handleReaction (msg, command) {
-    selectPromise('messages', {
-      guild_id: this.id,
-      message_id: msg.d.message_id
-    })
-      .then(({ results }) => {
+    db.query('SELECT * FROM messages WHERE guild_id=? AND message_id=?;', [
+      this.id,
+      msg.d.message_id
+    ])
+      .then((results) => {
         for (let i = 0; i < results.length; i++) {
           if (msg.d.emoji.name !== results[i].reaction) {
-            return;
+            continue;
           }
 
           this.addGuildRequest(command, `guilds/${this.id}/members/${msg.d.user_id}/roles/${this.roles[results[i].role]}`);

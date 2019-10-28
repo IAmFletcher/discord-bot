@@ -1,107 +1,58 @@
-const process = require('process');
-const mysql = require('mysql');
+const path = require('path');
+const Database = require('./lib/Database');
+const fs = require('./lib/fs');
 
-const DB_VERSION = '1';
+const DB_DIR = './db';
+const INIT_FILE = path.join(DB_DIR, 'init.sql');
+const FILE_REGEX = /v\d+.sql/;
+const NUMBER_REGEX = /\d+/;
 
-const database = mysql.createConnection({
-  host: process.env.SQLHost,
-  port: process.env.SQLRoot || 3306,
-  user: process.env.SQLUser,
-  password: process.env.SQLPassword,
-  charset: 'utf8mb4'
+const db = new Database();
+
+db.connect()
+  .then(() => {
+    return fs.readFile(INIT_FILE, 'utf8');
+  })
+  .then((query) => {
+    return db.query(query);
+  })
+  .then(() => {
+    return db.query('SELECT * FROM constants WHERE name = "db_version";');
+  })
+  .then((results) => {
+    // If db_version hasn't been set, start at 0
+    const dbVersion = (results[0] && results[0].value) || 0;
+
+    return readNewSQLFiles(dbVersion);
+  })
+  .then((queries) => {
+    return migrate(queries);
+  })
+  .catch((err) => {
+    console.error(err);
+  });
+
+function readNewSQLFiles (dbVersion) {
+  return fs.readDir(DB_DIR)
+    .then((files) => {
+      files = files.filter((file) => {
+        return file.match(FILE_REGEX) && file.match(NUMBER_REGEX) > dbVersion;
+      });
+
+      return Promise.all(files.map((file) => {
+        return fs.readFile(path.join(DB_DIR, file), 'utf8');
+      }));
+    });
+}
+
+async function migrate (queries) {
+  for (let i = 0; i < queries.length; i++) {
+    await db.query(queries[i]);
+  }
+}
+
+module.exports = db;
+
+process.on('SIGINT', () => {
+  db.end();
 });
-
-function connectPromise () {
-  return new Promise((resolve, reject) => {
-    database.connect((err) => {
-      if (err) {
-        return reject(err);
-      }
-
-      resolve();
-    });
-  });
-}
-
-function queryPromise (queryString, values) {
-  return new Promise((resolve, reject) => {
-    database.query(queryString, [values], (err, results, fields) => {
-      if (err) {
-        return reject(err);
-      }
-
-      resolve({ results, fields });
-    });
-  });
-}
-
-function insertPromise (table, columns, values) {
-  return queryPromise(`INSERT INTO ${table} (${columns.join(', ')}) VALUES ?`, values);
-}
-
-function deletePromise (table, conditions) {
-  const conditionsArray = [];
-  let column = null;
-
-  for (column in conditions) {
-    if (Object.prototype.hasOwnProperty.call(conditions, column)) {
-      conditionsArray.push(`${column} = ${conditions[column]}`);
-    }
-  }
-
-  return queryPromise(`DELETE FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
-}
-
-function selectPromise (table, conditions) {
-  const conditionsArray = [];
-  let column = null;
-
-  for (column in conditions) {
-    if (Object.prototype.hasOwnProperty.call(conditions, column)) {
-      conditionsArray.push(`${column} = ${conditions[column]}`);
-    }
-  }
-
-  return queryPromise(`SELECT * FROM ${table} WHERE ` + conditionsArray.join(' AND ') + ';');
-}
-
-async function initDatabase () {
-  await connectPromise();
-  console.log('Database Connected');
-
-  await queryPromise('SET character_set_server = utf8mb4;');
-
-  await queryPromise('CREATE DATABASE IF NOT EXISTS bot;');
-  await queryPromise('USE bot;');
-
-  await queryPromise('CREATE TABLE IF NOT EXISTS constants (id INT AUTO_INCREMENT UNIQUE, name VARCHAR(100) UNIQUE, value VARCHAR(100), key(id));');
-  await queryPromise('CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT UNIQUE, guild_id VARCHAR(64), message_id VARCHAR(64), reaction VARCHAR(100), role VARCHAR(100), key(id));');
-
-  await queryPromise('INSERT IGNORE INTO constants (name, value) VALUES ("db_version", ?);', DB_VERSION);
-  const response = await queryPromise('SELECT * FROM constants WHERE name = "db_version";');
-  const version = (response.results.length && response.results[0].value) || '';
-
-  switch (version) {
-    case DB_VERSION:
-      break;
-    default:
-      migrateTo1();
-  }
-
-  console.log('Database Setup Complete');
-}
-
-async function migrateTo1 () {
-  console.log('Migration To 1 Started');
-  const response = await queryPromise('SELECT * FROM messages WHERE is_unicode = TRUE;');
-
-  await Promise.all(response.results.map((row) => {
-    return queryPromise('UPDATE messages SET reaction = ? WHERE id = ?;', [String.fromCodePoint(row.unicode), row.id]);
-  }));
-
-  await queryPromise('ALTER TABLE messages DROP COLUMN is_unicode, DROP COLUMN unicode;');
-  await queryPromise('INSERT INTO constants (name, value) VALUES ("db_version", "1") ON DUPLICATE KEY UPDATE value = "1";');
-  console.log('Migration to 1 Completed');
-}
-
-module.exports = { database, initDatabase, insertPromise, deletePromise, selectPromise };
