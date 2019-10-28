@@ -1,6 +1,6 @@
 const autoBind = require('auto-bind');
 
-const apiClient = require('./apiClient');
+const client = require('./client');
 const db = require('./database');
 
 class Guild {
@@ -188,7 +188,7 @@ class Guild {
     }
 
     const request = this.queues[id].shift();
-    apiClient.request(request.method, request.endpoint);
+    client.request(request.method, request.endpoint);
   }
 
   clearIntervals () {
